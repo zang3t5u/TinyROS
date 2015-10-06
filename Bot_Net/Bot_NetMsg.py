@@ -224,7 +224,7 @@ class Bot_NetMsg(tinyos.message.Message.Message):
     
     #
     # Accessor methods for field: dataType
-    #   Field type: short
+    #   Field type: byte
     #   Offset (bits): 56
     #   Size (bits): 8
     #
@@ -254,16 +254,16 @@ class Bot_NetMsg(tinyos.message.Message.Message):
         return 56
     
     #
-    # Return the value (as a short) of the field 'dataType'
+    # Return the value (as a byte) of the field 'dataType'
     #
     def get_dataType(self):
-        return self.getUIntElement(self.offsetBits_dataType(), 8, 1)
+        return self.getSIntElement(self.offsetBits_dataType(), 8, 1)
     
     #
     # Set the value of the field 'dataType'
     #
     def set_dataType(self, value):
-        self.setUIntElement(self.offsetBits_dataType(), 8, value, 1)
+        self.setSIntElement(self.offsetBits_dataType(), 8, value, 1)
     
     #
     # Return the size, in bytes, of the field 'dataType'

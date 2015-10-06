@@ -24,11 +24,10 @@ def main():
 	Num_of_Bots = int(sys.argv[1])
 	dl = Bot_Net.Bot_Net(arg, Num_of_Bots, botID)
 	count = 0;
-	
+	sys.stdout.flush()
 	while(1):
-		time.sleep(1)
-		dl.send_msg(count, botID-1, [500., 400., math.pi])
-		count+=1
+		time.sleep((botID+1))
+		dl.send_msg(count, botID+1, [500., 400., math.pi])
 
 if __name__ == "__main__":
 	try:

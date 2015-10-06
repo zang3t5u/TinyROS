@@ -19,10 +19,11 @@ typedef nx_struct bot_net_msg
 	 * 		<Rob_poses> and <Vel_poses> are those of sendID
 	 * 		i.e Published on create<source>
 	*/ 
-	nx_uint8_t dataType;
+	nx_int8_t dataType;
 	/*
 	 * Type			Data			Size			Decode Index
 	 * ----			----			----			------------
+	 * -1			ACK				3 zeroes
 	 * 1			Pose			3 doubles		0 - x, 1 - y, 2 - theta
 	 * 2			Vel				3 doubles		0 - x, 1 - y, 2 - theta
 	 * 3			Neighbours		2 int			0 - Neighbour1, 1 - Neighbour2
