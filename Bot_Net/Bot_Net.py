@@ -10,37 +10,48 @@ from tinyos.message.Message import *
 from tinyos.message.SerialPacket import *
 from tinyos.packet.Serial import Serial
 
-#Total TimeInterval for 1 bot in TDMA
-t_interval = 2
+#Total TimeInterval in millisecs for 1 bot in TDMA
+t_interval = 250
 NBots = 1
 
 #Check if UART is free
+send_queue_size = 50
 uartBusy = False
 recvUART = False	#If message recvd on UART, UART is locked
 
 class Bot_Net:
     def __init__(self, motestring, Num_of_Bots, botID):
+    	
+    	global NBots, send_queue_size
+    	
     	self.counter = 0
+    	self.total_msgs = 0.
     	self.mif = MoteIF.MoteIF()
     	self.tos_source = self.mif.addSource(motestring)
     	self.mif.addListener(self, Bot_NetMsg.Bot_NetMsg)
-    	self.recv_data = []
     	
     	NBots = Num_of_Bots
     	self.motestring = motestring
     	self.botID = botID
     	
+    	'''For Msg Communication
+    	self.send_queue = [Bot_NetMsg.Bot_NetMsg()]*send_queue_size
+    	self.next_msg_index = 0
+    	'''
+    	
     	#Each bot Stores data of all bots
-    	self.bot_data = [[0]*9]*Num_of_Bots
+    	self.recv_seqNo = [-1]*(NBots+1)	#Store last received seqNo. from Bots + centralComp to Discard duplicates
+    	self.bot_data = [[0]*9]*NBots
     	
     	
     	#For TimeSync
     	self.start = False
-    	print self.start
+    	print "Start clock?: ", self.start
     	self.start_time = time.time()
     	self.last_time = self.start_time
     	self.timeOffset = self.botID*t_interval
-    	print self.timeOffset
+    	self.last_recv_time = 0
+    	print "TDMA Offset: ", self.timeOffset
 
     def receive(self, src, msg):
     	
@@ -53,16 +64,27 @@ class Bot_Net:
     		
     		#Get Msg Source
     		msg_source = msg.getAddr()
+    		m = Bot_NetMsg.Bot_NetMsg(msg.dataGet())
     		
+    		self.last_recv_time = time.time() - self.start_time
     		#If first message received from Central Comp, start timer
-    		print msg_source
     		if((not self.start) and msg_source==0):
-    			print "NOWWW!!!"
-    			self.start_time = time.time()
+    			print "Starting Clock NOW!!!"
+    			self.start_time = self.last_recv_time + self.start_time - m.get_tx_timestamp()/1000
+    			self.last_recv_time = 0
+    			self.recv_seqNo = [-1]*(NBots+1)
     			self.last_time = self.start_time
     			self.start = True
     		
-    		m = Bot_NetMsg.Bot_NetMsg(msg.dataGet())
+    		#Discard duplicate or old message
+    		if(m.get_seqNo() < self.recv_seqNo[msg_source]):
+    			#print "Old ", m.get_seqNo()," from ", msg_source
+    			sys.stdout.flush()
+    			recvUART = False
+    			return
+    		else:
+    			self.recv_seqNo[msg_source] = (m.get_seqNo()+1)%256
+    		
     		#Msg sent by Central Comp
     		if(msg_source == 0):
     			#Data in message describes the recipient
@@ -85,16 +107,15 @@ class Bot_Net:
     		'''
     	#Return
     	#Print information
-    	print "Received ", abstracted_data
+    	print "Received ", abstracted_data, " at ", 1000*self.last_recv_time
     	sys.stdout.flush()
     	recvUART = False
-    	self.recv_data.append(abstracted_data)
+    	self.bot_data.append(abstracted_data)
     
     def send_msg(self, recv_Rob_ID, dataType, data):
-    	global uartBusy
+    	global uartBusy, NBots, t_interval
     	msg_was_sent = False
     	if((self.start or (self.botID==0)) and (not uartBusy) and (not recvUART)):
-    		uartBusy = True
     		print "Sending packet ", self.counter
     		smsg = Bot_NetMsg.Bot_NetMsg()
     		smsg.set_seqNo(self.counter)
@@ -103,23 +124,33 @@ class Bot_Net:
     		if(len(data)<3):
     			data.extend(0)
     		smsg.set_data(data)
+    		#Wait for millisec timeslot 
+    		t = 1000*(time.time()-self.start_time) 
+    		if((not self.start) and (self.botID == 0)):
+    			print "NOW!!!"
+    			self.start_time = time.time()
+    			t = self.start_time
+    			self.last_time = self.start_time
+    			self.recv_seqNo = [-1]*(NBots+1)
+    			self.start = True 
+    		
+    		while(int((t%(NBots*t_interval))/t_interval) != self.botID):
+    			t = 1000*(time.time()-self.start_time)
+    			#print t    
+    		smsg.set_tx_timestamp(t)
     		
     		#Send Packet twice to ensure delivery and minimize number of dropped packets
     		packetCount = 0
+    		uartBusy = True
+    		#self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
     		while(packetCount<2):
-    			print "Sending packet ", self.counter," : Count ", packetCount
-    			#Wait for timeslot
-    			t = (time.time()-self.start_time)
-    			'''while(t%(NBots*t_interval) < self.timeOffset):
-    			t = (time.time()-self.start_time)
-    			self.last_time += t;
-    			'''
-    			smsg.set_tx_timestamp(t)
-    			while(recvUART):{}
+    			#print "Sending packet ", self.counter," : Count ", packetCount
+    			while(recvUART):{} 
+    			self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
     			packetCount+=1
-    			time.sleep(0.3)
-    			self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg)
-    			msg_was_sent = True
+    			time.sleep(0.5)
+    		
+    		msg_was_sent = True
     		uartBusy = False
     		self.counter+=1
     		self.counter%=256

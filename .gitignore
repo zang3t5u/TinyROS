@@ -6,6 +6,7 @@
 .#*
 .gdb*
 TAGS
+*.log
 
 # Ignore application built output
 build

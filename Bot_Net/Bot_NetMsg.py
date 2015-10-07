@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 20
+DEFAULT_MESSAGE_SIZE = 22
 
 # The Active Message type associated with this message.
 AM_TYPE = 137
 
 class Bot_NetMsg(tinyos.message.Message.Message):
-    # Create a new Bot_NetMsg of size 20.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=20):
+    # Create a new Bot_NetMsg of size 22.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=22):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -36,6 +36,10 @@ class Bot_NetMsg(tinyos.message.Message.Message):
             pass
         try:
             s += "  [seqNo=0x%x]\n" % (self.get_seqNo())
+        except:
+            pass
+        try:
+            s += "  [send_ID=0x%x]\n" % (self.get_send_ID())
         except:
             pass
         try:
@@ -168,9 +172,64 @@ class Bot_NetMsg(tinyos.message.Message.Message):
         return 8
     
     #
-    # Accessor methods for field: recv_Rob_ID
+    # Accessor methods for field: send_ID
     #   Field type: int
     #   Offset (bits): 40
+    #   Size (bits): 16
+    #
+
+    #
+    # Return whether the field 'send_ID' is signed (True).
+    #
+    def isSigned_send_ID(self):
+        return True
+    
+    #
+    # Return whether the field 'send_ID' is an array (False).
+    #
+    def isArray_send_ID(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'send_ID'
+    #
+    def offset_send_ID(self):
+        return (40 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'send_ID'
+    #
+    def offsetBits_send_ID(self):
+        return 40
+    
+    #
+    # Return the value (as a int) of the field 'send_ID'
+    #
+    def get_send_ID(self):
+        return self.getUIntElement(self.offsetBits_send_ID(), 16, 1)
+    
+    #
+    # Set the value of the field 'send_ID'
+    #
+    def set_send_ID(self, value):
+        self.setUIntElement(self.offsetBits_send_ID(), 16, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'send_ID'
+    #
+    def size_send_ID(self):
+        return (16 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'send_ID'
+    #
+    def sizeBits_send_ID(self):
+        return 16
+    
+    #
+    # Accessor methods for field: recv_Rob_ID
+    #   Field type: int
+    #   Offset (bits): 56
     #   Size (bits): 16
     #
 
@@ -190,13 +249,13 @@ class Bot_NetMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'recv_Rob_ID'
     #
     def offset_recv_Rob_ID(self):
-        return (40 / 8)
+        return (56 / 8)
     
     #
     # Return the offset (in bits) of the field 'recv_Rob_ID'
     #
     def offsetBits_recv_Rob_ID(self):
-        return 40
+        return 56
     
     #
     # Return the value (as a int) of the field 'recv_Rob_ID'
@@ -225,7 +284,7 @@ class Bot_NetMsg(tinyos.message.Message.Message):
     #
     # Accessor methods for field: dataType
     #   Field type: byte
-    #   Offset (bits): 56
+    #   Offset (bits): 72
     #   Size (bits): 8
     #
 
@@ -245,13 +304,13 @@ class Bot_NetMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'dataType'
     #
     def offset_dataType(self):
-        return (56 / 8)
+        return (72 / 8)
     
     #
     # Return the offset (in bits) of the field 'dataType'
     #
     def offsetBits_dataType(self):
-        return 56
+        return 72
     
     #
     # Return the value (as a byte) of the field 'dataType'
@@ -280,7 +339,7 @@ class Bot_NetMsg(tinyos.message.Message.Message):
     #
     # Accessor methods for field: data
     #   Field type: float[]
-    #   Offset (bits): 64
+    #   Offset (bits): 80
     #   Size of each element (bits): 32
     #
 
@@ -300,7 +359,7 @@ class Bot_NetMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'data'
     #
     def offset_data(self, index1):
-        offset = 64
+        offset = 80
         if index1 < 0 or index1 >= 3:
             raise IndexError
         offset += 0 + index1 * 32
@@ -310,7 +369,7 @@ class Bot_NetMsg(tinyos.message.Message.Message):
     # Return the offset (in bits) of the field 'data'
     #
     def offsetBits_data(self, index1):
-        offset = 64
+        offset = 80
         if index1 < 0 or index1 >= 3:
             raise IndexError
         offset += 0 + index1 * 32

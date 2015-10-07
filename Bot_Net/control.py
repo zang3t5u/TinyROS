@@ -13,9 +13,12 @@ def main():
 		print "Usage:", sys.argv[0], "Num_of_Bots", "BotID" , "sf@localhost:9002"
 		sys.exit()
 	if(len(sys.argv) < 4):
-		test = subprocess.Popen(["motelist"], stdout=subprocess.PIPE)
-		output = test.communicate()[0].split()
-		arg = 'serial@'+output[7]+':115200'
+		test = subprocess.Popen(['motelist| grep "/dev/ttyUSB"'], stdout=subprocess.PIPE, shell = True)
+		output = test.communicate()[0].split("\n")
+		base_index = output[0].find("/dev/ttyUSB")
+		dev = output[0][base_index:base_index+12]
+		
+		arg = 'serial@'+dev+':115200'
 	else:
 		arg = sys.argv[3]
 	print "------------------"
@@ -26,8 +29,9 @@ def main():
 	count = 0;
 	sys.stdout.flush()
 	while(1):
-		time.sleep((botID+1))
+		time.sleep((1))
 		dl.send_msg(count, botID+1, [500., 400., math.pi])
+	
 
 if __name__ == "__main__":
 	try:

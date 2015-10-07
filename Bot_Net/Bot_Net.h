@@ -5,7 +5,7 @@ enum {
   AM_BOT_NET_MSG = 0x89,
   AM_RADIO = 6
 };
-
+//Msg size = 4 + 1 + 2 + 1 + 3*4 = 20 Bytes
 typedef nx_struct bot_net_msg 
 {
 	nx_uint32_t tx_timestamp;
