@@ -30,7 +30,14 @@ def main():
 	sys.stdout.flush()
 	while(1):
 		time.sleep((1))
-		dl.send_msg(count, botID+1, [500., 400., math.pi])
+		if(botID!=0):
+			dl.send_msg(botID, 0, 1, [botID*8000., botID*1000., math.pi])
+		else:
+			send_to = (count%2)+1
+			print "Sending to ", send_to
+			dl.send_msg(botID, send_to, 1, [send_to*500., send_to*400., math.pi])
+		#dl.display_database()
+		count+=1
 	
 
 if __name__ == "__main__":

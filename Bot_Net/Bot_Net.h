@@ -8,8 +8,9 @@ enum {
 //Msg size = 4 + 1 + 2 + 1 + 3*4 = 20 Bytes
 typedef nx_struct bot_net_msg 
 {
-	nx_uint32_t tx_timestamp;
+	nx_float tx_timestamp;
 	nx_uint8_t seqNo;
+	nx_uint8_t send_ID;
 	nx_uint16_t recv_Rob_ID;
 	/*
 	 * 1.If Sender is Central Comp 	==> source == 0
@@ -26,8 +27,8 @@ typedef nx_struct bot_net_msg
 	 * -1			ACK				3 zeroes
 	 * 1			Pose			3 doubles		0 - x, 1 - y, 2 - theta
 	 * 2			Vel				3 doubles		0 - x, 1 - y, 2 - theta
-	 * 3			Neighbours		2 int			0 - Neighbour1, 1 - Neighbour2
-	 * 4			Leader			3 doubles		0 - x, 1 - y, 2 - theta
+	 * 3			Leader			3 doubles		0 - x, 1 - y, 2 - theta
+	 * 4			------		---------		-------------------------
 	 * */
 	nx_float data[3];
 } bot_net_msg_t;

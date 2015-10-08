@@ -41,14 +41,30 @@ class Bot_Net:
     	
     	#Each bot Stores data of all bots
     	self.recv_seqNo = [-1]*(NBots+1)	#Store last received seqNo. from Bots + centralComp to Discard duplicates
-    	self.bot_data = [[0]*9]*NBots
-    	
+    	self.discarded = [-1]*(NBots+1)		#Keep count of discarded messages from each source
+    	self.bot_data = []
+    	for i in range(NBots):
+    		self.bot_data.append([0]*10)
+    		self.bot_data[i][0] = i+1
+    	'''
+    	Index							Data
+    	-----							----
+    	0									ID
+    	1									X
+    	2									Y
+    	3									Theta
+    	4									VelX
+    	5									VelY
+    	6									VelTheta
+    	7									Leader X
+    	8									Leader Y
+    	9									last_update_time
+    	'''
     	
     	#For TimeSync
     	self.start = False
     	print "Start clock?: ", self.start
     	self.start_time = time.time()
-    	self.last_time = self.start_time
     	self.timeOffset = self.botID*t_interval
     	self.last_recv_time = 0
     	print "TDMA Offset: ", self.timeOffset
@@ -61,29 +77,33 @@ class Bot_Net:
     	#List of data to be returned
     	abstracted_data = []
     	if msg.get_amType() == Bot_NetMsg.AM_TYPE:
-    		
+    		self.last_recv_time = time.time() - self.start_time
     		#Get Msg Source
     		msg_source = msg.getAddr()
     		m = Bot_NetMsg.Bot_NetMsg(msg.dataGet())
+    		#msg_source = m.get_send_ID()
     		
-    		self.last_recv_time = time.time() - self.start_time
     		#If first message received from Central Comp, start timer
     		if((not self.start) and msg_source==0):
     			print "Starting Clock NOW!!!"
-    			self.start_time = self.last_recv_time + self.start_time - m.get_tx_timestamp()/1000
+    			self.start_time = self.last_recv_time + self.start_time - m.get_tx_timestamp()/1000.0
+    			print "at Time: ", self.start_time
     			self.last_recv_time = 0
     			self.recv_seqNo = [-1]*(NBots+1)
-    			self.last_time = self.start_time
+    			self.discarded = [-1]*(NBots+1)
     			self.start = True
     		
-    		#Discard duplicate or old message
-    		if(m.get_seqNo() < self.recv_seqNo[msg_source]):
+    		#Discard duplicate or old messages. 
+    		#If more than 2 messages discarded, accept message, To account for dropped messages during rollover from 255 to 0
+    		if((m.get_seqNo() < self.recv_seqNo[msg_source]) and (self.discarded[msg_source])<2):
     			#print "Old ", m.get_seqNo()," from ", msg_source
     			sys.stdout.flush()
+    			self.discarded[msg_source] += 1
     			recvUART = False
     			return
     		else:
     			self.recv_seqNo[msg_source] = (m.get_seqNo()+1)%256
+    			self.discarded[msg_source] = 0
     		
     		#Msg sent by Central Comp
     		if(msg_source == 0):
@@ -100,6 +120,7 @@ class Bot_Net:
     		abstracted_data.extend([msg_bot])
     		abstracted_data.extend([m.get_dataType()])
     		abstracted_data.extend([m.get_data()])
+    		self.decode_data(msg_bot, m, msg_source)
     		'''  			
     		#Print information
     		print "Received", msg
@@ -107,35 +128,42 @@ class Bot_Net:
     		'''
     	#Return
     	#Print information
-    	print "Received ", abstracted_data, " at ", 1000*self.last_recv_time
+    	print "From ", msg_source, " Received ", abstracted_data, " at ", 1000*self.last_recv_time
     	sys.stdout.flush()
     	recvUART = False
-    	self.bot_data.append(abstracted_data)
+    	#self.bot_data[msg_bot].append(abstracted_data)
     
-    def send_msg(self, recv_Rob_ID, dataType, data):
+    def send_msg(self, send_ID, recv_Rob_ID, dataType, data):
+    	
     	global uartBusy, NBots, t_interval
+    	
     	msg_was_sent = False
+    	
     	if((self.start or (self.botID==0)) and (not uartBusy) and (not recvUART)):
     		print "Sending packet ", self.counter
     		smsg = Bot_NetMsg.Bot_NetMsg()
     		smsg.set_seqNo(self.counter)
+    		smsg.set_send_ID(send_ID)
     		smsg.set_recv_Rob_ID(recv_Rob_ID)
     		smsg.set_dataType(dataType)
     		if(len(data)<3):
     			data.extend(0)
     		smsg.set_data(data)
+    		
     		#Wait for millisec timeslot 
     		t = 1000*(time.time()-self.start_time) 
+    		cond = int((t%((NBots+1)*t_interval))/t_interval)
     		if((not self.start) and (self.botID == 0)):
-    			print "NOW!!!"
+    			print "Starting Clock NOW!!!"
     			self.start_time = time.time()
-    			t = self.start_time
-    			self.last_time = self.start_time
+    			print "at Time: ", self.start_time
     			self.recv_seqNo = [-1]*(NBots+1)
+    			self.discarded = [-1]*(NBots+1)
     			self.start = True 
     		
-    		while(int((t%(NBots*t_interval))/t_interval) != self.botID):
+    		while(cond != self.botID):
     			t = 1000*(time.time()-self.start_time)
+    			cond = int((t%((NBots+1)*t_interval))/t_interval)
     			#print t    
     		smsg.set_tx_timestamp(t)
     		
@@ -149,12 +177,46 @@ class Bot_Net:
     			self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
     			packetCount+=1
     			time.sleep(0.5)
-    		
     		msg_was_sent = True
     		uartBusy = False
     		self.counter+=1
     		self.counter%=256
     	return msg_was_sent
+    	
+    def decode_data(self, msg_bot, m, msg_source):
+    	botIndex = msg_bot-1
+    	dataType = m.get_dataType()
+    	t = m.get_tx_timestamp()/1000.0
+    	data = m.get_data()
+    	seq = m.get_seqNo()
+    	
+    	#Check if received update is indeed new one and not hopped msg
+    	if(self.bot_data[botIndex][9] > t):		#Old update
+    		print "Old Update"
+    		return
+    	self.bot_data[botIndex][0] = botIndex+1
+    	'''
+    	POSE Data => dataType = 1
+    	Vel Data => dataType = 2
+    	Leader Data => dataType = 3
+    	'''
+    	#print " Storing for Robot", msg_bot, "at index: ", botIndex
+    	self.bot_data[botIndex][1 + 3*(dataType-1)] = data[0]
+    	self.bot_data[botIndex][2 + 3*(dataType-1)] = data[1]
+    	self.bot_data[botIndex][3 + 3*(dataType-1)] = data[2]
+    	self.bot_data[botIndex][9] = t		#Store last update timestamp
+    	#self.display_database()
+    
+    def display_database(self):
+    	if(self.start):
+    		print "+++++++++++++ Bot Database"
+    		for i in range(len(self.bot_data)):
+    			print "Robot ", self.bot_data[i][0], ": "
+    			print "    x: ", self.bot_data[i][1]
+    			print "    y: ", self.bot_data[i][2]
+    			print "theta: ", self.bot_data[i][3]
+    			print "-------"
+    	sys.stdout.flush()
 '''
     def main_loop(self):
     	while 1:
