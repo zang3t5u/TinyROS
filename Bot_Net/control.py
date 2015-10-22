@@ -25,8 +25,8 @@ def main():
 	print "Serial Started at:"+arg
 	botID = int(sys.argv[2])
 	print "botID      : ", botID
+	Num_of_Bots = int(sys.argv[1]) 
 	print "Total Bots : ", Num_of_Bots
-	Num_of_Bots = int(sys.argv[1])
 	dl = Bot_Net.Bot_Net(arg, Num_of_Bots, botID)
 	count = 0;
 	sys.stdout.flush()
