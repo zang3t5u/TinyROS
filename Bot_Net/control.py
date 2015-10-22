@@ -24,6 +24,8 @@ def main():
 	print "------------------"
 	print "Serial Started at:"+arg
 	botID = int(sys.argv[2])
+	print "botID      : ", botID
+	print "Total Bots : ", Num_of_Bots
 	Num_of_Bots = int(sys.argv[1])
 	dl = Bot_Net.Bot_Net(arg, Num_of_Bots, botID)
 	count = 0;
@@ -33,7 +35,7 @@ def main():
 		if(botID!=0):
 			dl.send_msg(botID, 0, 1, [botID*8000., botID*1000., math.pi])
 		else:
-			send_to = (count%2)+1
+			send_to = (count%Num_of_Bots)+1
 			print "Sending to ", send_to
 			dl.send_msg(botID, send_to, 1, [send_to*500., send_to*400., math.pi])
 		#dl.display_database()
