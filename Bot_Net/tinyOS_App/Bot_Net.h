@@ -25,10 +25,10 @@ typedef nx_struct bot_net_msg
 	 * Type			Data			Size			Decode Index
 	 * ----			----			----			------------
 	 * -1			ACK				3 zeroes
-	 * 1			Pose			3 doubles		0 - x, 1 - y, 2 - theta
-	 * 2			Vel				3 doubles		0 - x, 1 - y, 2 - theta
+	 * 1			Pose				3 doubles		0 - x, 1 - y, 2 - theta
+	 * 2			Vel				2 doubles		0 - linear, 1 - angular, 2 - zero
 	 * 3			Leader			3 doubles		0 - x, 1 - y, 2 - theta
-	 * 4			------		---------		-------------------------
+	 * 4			------			---------		-------------------------
 	 * */
 	nx_float data[3];
 } bot_net_msg_t;

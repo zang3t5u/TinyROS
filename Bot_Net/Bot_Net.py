@@ -53,9 +53,9 @@ class Bot_Net:
     	1									X
     	2									Y
     	3									Theta
-    	4									VelX
-    	5									VelY
-    	6									VelTheta
+    	4									VelLinear
+    	5									VelAngular
+    	6									0
     	7									Leader X
     	8									Leader Y
     	9									last_update_time
