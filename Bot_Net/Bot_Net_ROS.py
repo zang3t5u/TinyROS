@@ -90,13 +90,13 @@ class Bot_Net:
 		# self.event_trigger_<new_topic> = min_value_for_transmission;
 		#------------------------------------------------------
 		#Condition for broadcasting new values
-		self.Num_Data = 5	#increase by 1 when adding new topics
+		Num_Data = 5	#increase by 1 when adding new topics
 
-		self.event_trigger_movement = 0.05;
-		self.event_trigger_angle = 0.02;
+		self.event_trigger_movement = 0.1;
+		self.event_trigger_angle = 0.05;
 		self.event_trigger_vel = 0.05;
-		self.event_trigger_offset = 0.05;
-		self.event_trigger_centre = 0.05;
+		self.event_trigger_offset = 0.0005;
+		self.event_trigger_centre = 0.0005;
 		#------------------------------------------------------
 		#Add more event_trigger conditions for each topic above
 		#------------------------------------------------------
@@ -125,7 +125,7 @@ class Bot_Net:
 		self.discarded = [-1]*(NBots+1)		#Keep count of discarded messages from each source
 		self.bot_data = []
 		for i in range(NBots):
-			self.bot_data.append([0]*(1+3*self.Num_Data))
+			self.bot_data.append([0]*(1+3*Num_Data))
 			self.bot_data[i][0] = i+1
 
 		#Tracking which Robot values were initialized
@@ -134,12 +134,6 @@ class Bot_Net:
 		
 		#Tracking changes in data to be published for each bot		
 		self.publish_data = [0]*(NBots)
-		self.publish_data_i = []
-		self.publish_data_tCount = []
-		for i in range(NBots):
-			self.publish_data_i.append([0]*(self.Num_Data))	
-			self.publish_data_tCount.append([0]*(self.Num_Data))
-
 		'''
 		#***************************************************************************************
 		#***************************************************************************************
@@ -272,7 +266,7 @@ class Bot_Net:
 		
 		if((self.start or (self.botID==0)) and (not uartBusy) and (not recvUART)):
 			uartBusy = True			
-			#print "Sending packet ", self.counter
+			print "Sending packet ", self.counter
 			smsg = Bot_NetMsg.Bot_NetMsg()
 			smsg.set_seqNo(self.counter)
 			smsg.set_send_ID(send_ID)
@@ -286,9 +280,9 @@ class Bot_Net:
 			t = 1000*(time.time()-self.start_time) 
 			cond = int((t%((NBots+1)*t_interval))/t_interval)
 			if((not self.start) and (self.botID == 0)):
-				#print "Starting Clock NOW!!!"
+				print "Starting Clock NOW!!!"
 				self.start_time = time.time()
-				#print "at Time: ", self.start_time
+				print "at Time: ", self.start_time
 				self.recv_seqNo = [-1]*(NBots+1)
 				self.discarded = [-1]*(NBots+1)
 				self.start = True 
@@ -313,11 +307,11 @@ class Bot_Net:
 					print "Receiving"
 				self.mif.sendMsg(self.tos_source, 0xFFFF, smsg.get_amType(), 0, smsg) 
 				packetCount+=1
-				#time.sleep(.7)
+				#time.sleep(t_interval/1000)
 
 				#Increment Event triggered count
 				self.count_ET = self.count_ET + 1.0
-				#print "Gaya"
+				print "Gaya"
 			msg_was_sent = True
 			uartBusy = False
 			self.counter+=1
@@ -352,7 +346,6 @@ class Bot_Net:
 		'''
 		#Signal Publisher to update values
 		self.publish_data[botIndex] = dataType;
-		self.publish_data_i[botIndex][dataType] = 1;
 
 		#print " Storing for Robot", msg_bot, "at index: ", botIndex
 		self.bot_data[botIndex][1 + 3*(dataType-1)] = data[0]
@@ -420,14 +413,12 @@ class Bot_Net:
 			while uartBusy:
 				#print 'Busy'
 				pass
-			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			print "Sending New Pose for ", node
 			if DEBUG == True:
 				print "dTheta is ", abs(dtheta), " against ", self.event_trigger_angle
 				print "movement is ", movement, " against ", self.event_trigger_movement
-			
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			self.publish_data[botIndex] = send_dataType
-			self.publish_data_i[botIndex][send_dataType-1] = 1;
 			if msg_was_sent:
 				self.bot_data[botIndex][1] = x_new
 				self.bot_data[botIndex][2] = y_new
@@ -462,11 +453,9 @@ class Bot_Net:
 			while uartBusy:
 				#print "Busy for Vel"				
 				pass
-			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			print "Sending New Vel for ", node
-			
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			self.publish_data[botIndex] = send_dataType
-			self.publish_data_i[botIndex][send_dataType-1] = 1;
 			if msg_was_sent:
 				self.bot_data[botIndex][4] = x_new
 				self.bot_data[botIndex][5] = y_new
@@ -501,11 +490,9 @@ class Bot_Net:
 			while uartBusy:
 				#print "Busy for Offset"				
 				pass
-			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			print "Sending New Offset for ", node
-			
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			self.publish_data[botIndex] = send_dataType
-			self.publish_data_i[botIndex][send_dataType-1] = 1;
 			if msg_was_sent:
 				self.bot_data[botIndex][7] = x_new
 				self.bot_data[botIndex][8] = y_new
@@ -541,11 +528,9 @@ class Bot_Net:
 			while uartBusy:
 				#print "Busy for Centre"				
 				pass
-			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
 			print "Sending New Centre for ", node
-			
-			self.publish_data[botIndex] = send_dataType	
-			self.publish_data_i[botIndex][send_dataType-1] = 1;
+			msg_was_sent = self.send_msg(self.botID, node, send_dataType, [x_new, y_new, theta_new])
+			self.publish_data[botIndex] = send_dataType
 			if msg_was_sent:
 				self.bot_data[botIndex][10] = x_new
 				self.bot_data[botIndex][11] = y_new
@@ -604,7 +589,6 @@ class Bot_Net:
 			x_new = data.x
 			y_new = data.y
 			theta_new = 0
-			theta_old = 0
 			condn = self.event_trigger_offset
 		elif dataType == 4:
 			strType = 'Centre'
